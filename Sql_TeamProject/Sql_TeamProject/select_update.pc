@@ -1,0 +1,185 @@
+// 마지막고침 : 2020.11.17
+// win32 Visual C 2010 이상컴파일시 추가
+// 프로그램 가장 첫 줄에 추가할 것
+#define _CRT_SECURE_NO_WARNINGS
+//-------------------------------------------
+
+#include <stdlib.h>
+#include <stdio.h>
+#include <ctype.h>
+#include <string.h>
+#include <conio.h>
+
+/* for oracle */
+#include <sqlda.h>
+#include <sqlca.h>
+#include <sqlcpr.h>
+/*------------*/
+
+#define getch() _getch()
+
+void DB_connect();
+void Select_tuple();
+void Update_tuple();
+
+void sql_error();
+
+EXEC SQL BEGIN DECLARE SECTION;
+	VARCHAR uid[80];
+	VARCHAR pwd[20];
+EXEC SQL END DECLARE SECTION;
+
+char Deptno[100], Dname[14], Loc[13] ;
+
+void main()
+{
+	DB_connect();
+	Select_tuple();
+	Update_tuple();
+	getch();
+	EXEC SQL COMMIT WORK RELEASE ;
+}
+void DB_connect()
+{
+   strcpy((char *)uid.arr,"b20173129@//sedb.deu.ac.kr:1521/orcl");
+   uid.len = (short) strlen((char *)uid.arr);
+   strcpy((char *)pwd.arr,"20173129");
+   pwd.len = (short) strlen((char *)pwd.arr);
+
+   EXEC SQL CONNECT :uid IDENTIFIED BY :pwd;
+
+	// connection이 실패했을경우의 처리부분
+
+	if (sqlca.sqlcode != 0 && sqlca.sqlcode != -1405){ 
+		printf("Connect error: %s", sqlca.sqlerrm.sqlerrmc);
+		getch();
+		exit(-1);
+	}
+
+    printf("Oracle Connect SUCCESS by %s\n", uid.arr);
+}
+
+void Update_tuple()
+{
+
+EXEC SQL BEGIN DECLARE SECTION;
+
+   char dynstmt[1000];
+
+EXEC SQL END DECLARE SECTION;
+
+   char  no[100];
+   char  name[14];
+   char  loc[13];
+  
+   EXEC SQL WHENEVER SQLERROR DO sql_error("\7ORACLE ERROR:\n");
+   printf(" 수정할 데이터를 입력하세요 !!\n");   
+
+   printf("%s %s %s\n", Deptno, Dname, Loc);
+
+   printf("부서번호:");
+   gets(no);
+   if(no[0] == '\0' ) {
+       printf("%s\n", Deptno);
+       strcpy(no, Deptno);
+   }
+     
+   printf("부서이름:");
+   gets(name);
+   if( name[0] == '\0' ){
+       printf("%s\n", Dname);
+       strcpy(name, Dname);
+   }
+
+   printf("지역:");
+   gets(loc);
+   if( loc[0]== '\0' ){
+        printf("%s\n", Loc);
+        strcpy(loc, Loc);
+   }
+
+   sprintf(dynstmt,"update dept set deptno = %s, dname= '%s',loc = '%s' where deptno = %s ", no, name, loc, Deptno);
+   printf("stmt:%s\n", dynstmt);
+   
+   EXEC SQL EXECUTE IMMEDIATE :dynstmt ;
+
+   printf("Update Success\n");
+   EXEC SQL COMMIT WORK ; 
+
+}
+
+
+void Select_tuple()
+{
+EXEC SQL BEGIN DECLARE SECTION;
+    varchar no[100];
+    varchar name[14];
+    varchar loc[13];
+
+    char dynstmt[1000];
+EXEC SQL END DECLARE SECTION;
+    
+    char no_temp1[10];
+
+     
+    EXEC SQL WHENEVER SQLERROR DO sql_error("\7ORACLE ERROR:\n");
+   
+      
+    printf("업데이트할 부서번호를 입력하세요:");
+    fgets(no_temp1, 10, stdin); 
+    no_temp1[strlen(no_temp1)-1] = '\0' ;  
+   
+   
+    sprintf(dynstmt,"SELECT deptno, dname, loc  FROM dept where deptno = %s", no_temp1) ;
+   
+    EXEC SQL PREPARE S FROM :dynstmt ;
+
+    EXEC SQL DECLARE c_cursor CURSOR FOR S ; 
+
+    EXEC SQL OPEN c_cursor ; 
+
+  
+    EXEC SQL WHENEVER NOT FOUND do break;
+    for(;;)
+    {
+        EXEC SQL FETCH c_cursor INTO :no, :name, :loc ;
+
+	    no.arr[no.len] = '\0';
+	    name.arr[name.len] = '\0';
+	    loc.arr[loc.len] = '\0';
+
+	    printf("부서번호:%s 부서이름:%s 지역:%s \n", no.arr, name.arr, loc.arr);
+    }
+	
+    strcpy(Deptno, no.arr);
+	strcpy(Dname, name.arr);
+	strcpy(Loc, loc.arr);
+
+    printf("match tuple no : %d\n", sqlca.sqlerrd[2]);
+
+    EXEC SQL CLOSE c_cursor; 
+   
+}
+
+/* --------------------------------------------------------------------------
+void sql_error()
+
+   errrpt prints the ORACLE error msg and number.
+-------------------------------------------------------------------------- */
+void sql_error(char *msg)
+{
+    char err_msg[128];
+    size_t buf_len, msg_len;
+
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+
+    printf("\n%s\n", msg);
+    buf_len = sizeof (err_msg);
+    sqlglm(err_msg, &buf_len, &msg_len);
+    printf("%.*s\n", msg_len, err_msg);
+
+    getch();
+
+    EXEC SQL ROLLBACK WORK ;
+    //exit(EXIT_FAILURE);
+}

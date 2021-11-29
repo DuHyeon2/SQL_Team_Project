@@ -1,0 +1,150 @@
+// 마지막고침 : 2020.11.17
+// win32 Visual C 2010 이상컴파일시 추가
+// 프로그램 가장 첫 줄에 추가할 것
+#define _CRT_SECURE_NO_WARNINGS
+//-----------------------------------------
+
+#include <stdlib.h>
+#include <stdio.h>
+#include <ctype.h>
+#include <string.h>
+#include <conio.h>
+
+/* for oracle */
+#include <sqlda.h>
+#include <sqlca.h>
+#include <sqlcpr.h>
+
+
+// win32 Visual C 2010 이상컴파일시 추가
+#define getch() _getch()
+//-----------------------------------------
+
+void DB_connect();
+void Get_tuple();
+void rtrim();
+
+void sql_error();
+
+EXEC SQL BEGIN DECLARE SECTION;
+	VARCHAR uid[80];
+	VARCHAR pwd[20];
+EXEC SQL END DECLARE SECTION;
+
+
+void main()
+{
+	DB_connect();
+	Get_tuple();
+	EXEC SQL COMMIT WORK RELEASE ;
+	getch();
+
+}
+void DB_connect()
+{
+   /* 아이디와 패스워드 수정해서 넣으세요*/
+   strcpy((char *)uid.arr,"scott@//sedb.deu.ac.kr:1521/orcl");
+   uid.len = (short) strlen((char *)uid.arr);
+   strcpy((char *)pwd.arr,"tiger");
+   pwd.len = (short) strlen((char *)pwd.arr);
+
+   EXEC SQL CONNECT :uid IDENTIFIED BY :pwd;
+
+	// connection이 실패했을경우의 처리부분
+
+	if (sqlca.sqlcode != 0 && sqlca.sqlcode != -1405){ 
+		printf("Connect error: %s", sqlca.sqlerrm.sqlerrmc);
+		getch();
+		exit(-1);
+	}
+
+    printf("Oracle Connect SUCCESS by %s\n", uid.arr);
+}
+
+void Get_tuple()
+{
+/* --------------------------------------------------------------------------
+   Retrieve the current maximum employee number
+-------------------------------------------------------------------------- */
+EXEC SQL BEGIN DECLARE SECTION;
+   varchar no[100];
+   varchar name[100];
+
+   char dynstmt[1000];
+EXEC SQL END DECLARE SECTION;
+
+   char no_temp[10];
+
+   /* Register sql_error() as the error handler. */
+   EXEC SQL WHENEVER SQLERROR DO sql_error("\7ORACLE ERROR:\n");
+
+
+   /* 사용자 입력 */
+   printf("찾을 사람의 부서번호를 입력하세요:");
+   gets(no_temp);
+
+   
+   /* 실행시킬 SQL 문장*/
+   sprintf(dynstmt,"SELECT empno, ename FROM emp where deptno=%s\n",no_temp); 
+
+   /* select 문장이 제대로 구성되어 있는지 화면에 찍어봄 */
+   printf("SQL:%s\n", dynstmt);
+
+   EXEC SQL PREPARE S FROM :dynstmt ;
+
+   /* cursor 선언 */
+   EXEC SQL DECLARE c_cursor CURSOR FOR S ; 
+
+   /* cursor open */
+   EXEC SQL OPEN c_cursor ; 
+
+    for (;;)
+    {
+        EXEC SQL WHENEVER NOT FOUND DO break;
+        EXEC SQL FETCH c_cursor INTO :no, :name;
+
+             no.arr[no.len] = '\0';
+	name.arr[name.len] = '\0';
+	printf("NO:%s NAME:%s\n", no.arr, name.arr);
+    }
+    /* 전송된 투플의 수를 출력함. */
+    printf("match tuple no : %d\n", sqlca.sqlerrd[2]);
+
+    /* Close the cursor. */
+   EXEC SQL CLOSE c_cursor;
+
+}
+
+void rtrim(char temp[])
+{
+	int i;
+
+	i = strlen(temp)-1;
+	
+	while (temp[i] == ' ' && i > 0 ){
+		i--;
+        }
+	temp[i+1]='\0';
+}
+/* --------------------------------------------------------------------------
+int sql_error()
+
+   errrpt prints the ORACLE error msg and number.
+-------------------------------------------------------------------------- */
+void sql_error(char *msg)
+{
+    char err_msg[128];
+    size_t buf_len, msg_len;
+
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+
+    printf("\n%s\n", msg);
+    buf_len = sizeof (err_msg);
+    sqlglm(err_msg, &buf_len, &msg_len);
+    printf("%.*s\n", msg_len, err_msg);
+
+    getch();
+    EXEC SQL ROLLBACK WORK ;
+
+}
+
