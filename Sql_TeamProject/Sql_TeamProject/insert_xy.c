@@ -270,10 +270,10 @@ void Insert_tuple()
     struct { unsigned short len; unsigned char arr[15]; } num;
 
     /* varchar name[17]; */
-    struct { unsigned short len; unsigned char arr[2]; } type;
+    struct { unsigned short len; unsigned char arr[15]; } type;
 
     /* varchar loc[16]; */
-    struct { unsigned short len; unsigned char arr[5]; } size;
+    struct { unsigned short len; unsigned char arr[15]; } size;
 
     struct { unsigned short len; unsigned char arr[15]; } name;
 
@@ -343,12 +343,7 @@ void Insert_tuple()
     gets(seller.arr);
     seller.len = strlen(seller.arr);
 
-    gotoxy(20, 19);
-    gets(order.arr);
-    order.len = strlen(order.arr);
-
-
-    sprintf(dynstmt, "insert into product values ( product_seq.nextval, '%s', '%s', '%s', '%s', '%s', '%s', '%s')", type.arr, size.arr, name.arr, color.arr, cost.arr, seller.arr, order.arr);
+    sprintf(dynstmt, "insert into product values ( product_seq.nextval, '%s', '%s', '%s', '%s', '%s', '%s', null)", type.arr, size.arr, name.arr, color.arr, cost.arr, seller.arr);
 
     printf("stmt:%s\n", dynstmt);
     /* 실행시킬 SQL 문장*/
@@ -412,6 +407,97 @@ void Insert_tuple()
 
 }
 
+void Delete_tuple()
+{
+
+    /* EXEC SQL BEGIN DECLARE SECTION; */
+
+
+    char dynstmt[1000];
+
+    /* EXEC SQL END DECLARE SECTION; */
+
+
+    char  no[100];
+    char  flag = 'n';
+
+    /* EXEC SQL WHENEVER SQLERROR DO sql_error("\7ORACLE ERROR:\n"); */
+
+
+    printf("삭제할 상품번호를 입력하세요 : !!\n");
+    gets(no);
+
+    printf("해당 상품을 삭제하시겠습니까? (y/n) :");
+
+    flag = (char*)getch();
+
+    if (flag == 'y' || flag == 'Y') {
+        sprintf(dynstmt, "delete from product where product_number = '%s' ", no);
+        printf("stmt:%s\n", dynstmt);
+        /* EXEC SQL EXECUTE IMMEDIATE :dynstmt ; */
+
+        {
+            struct sqlexd sqlstm;
+            sqlstm.sqlvsn = 13;
+            sqlstm.arrsiz = 4;
+            sqlstm.sqladtp = &sqladt;
+            sqlstm.sqltdsp = &sqltds;
+            sqlstm.stmt = "";
+            sqlstm.iters = (unsigned int)1;
+            sqlstm.offset = (unsigned int)51;
+            sqlstm.cud = sqlcud0;
+            sqlstm.sqlest = (unsigned char*)&sqlca;
+            sqlstm.sqlety = (unsigned short)4352;
+            sqlstm.occurs = (unsigned int)0;
+            sqlstm.sqhstv[0] = (void*)dynstmt;
+            sqlstm.sqhstl[0] = (unsigned int)1000;
+            sqlstm.sqhsts[0] = (int)0;
+            sqlstm.sqindv[0] = (void*)0;
+            sqlstm.sqinds[0] = (int)0;
+            sqlstm.sqharm[0] = (unsigned int)0;
+            sqlstm.sqadto[0] = (unsigned short)0;
+            sqlstm.sqtdso[0] = (unsigned short)0;
+            sqlstm.sqphsv = sqlstm.sqhstv;
+            sqlstm.sqphsl = sqlstm.sqhstl;
+            sqlstm.sqphss = sqlstm.sqhsts;
+            sqlstm.sqpind = sqlstm.sqindv;
+            sqlstm.sqpins = sqlstm.sqinds;
+            sqlstm.sqparm = sqlstm.sqharm;
+            sqlstm.sqparc = sqlstm.sqharc;
+            sqlstm.sqpadto = sqlstm.sqadto;
+            sqlstm.sqptdso = sqlstm.sqtdso;
+            sqlcxt((void**)0, &sqlctx, &sqlstm, &sqlfpn);
+            if (sqlca.sqlcode < 0) sql_error("\7ORACLE ERROR:\n");
+        }
+
+
+        printf("삭제 성공\n");
+        /* EXEC SQL COMMIT WORK ; */
+
+        {
+            struct sqlexd sqlstm;
+            sqlstm.sqlvsn = 13;
+            sqlstm.arrsiz = 4;
+            sqlstm.sqladtp = &sqladt;
+            sqlstm.sqltdsp = &sqltds;
+            sqlstm.iters = (unsigned int)1;
+            sqlstm.offset = (unsigned int)70;
+            sqlstm.cud = sqlcud0;
+            sqlstm.sqlest = (unsigned char*)&sqlca;
+            sqlstm.sqlety = (unsigned short)4352;
+            sqlstm.occurs = (unsigned int)0;
+            sqlcxt((void**)0, &sqlctx, &sqlstm, &sqlfpn);
+            if (sqlca.sqlcode < 0) sql_error("\7ORACLE ERROR:\n");
+        }
+
+
+    }
+    else {
+        printf("삭제를 취소합니다.\n");
+    }
+
+}
+
 void Update_tuple()
 {
 
@@ -424,10 +510,10 @@ void Update_tuple()
 
 
     /* varchar name[17]; */
-    struct { unsigned short len; unsigned char arr[2]; } type;
+    struct { unsigned short len; unsigned char arr[15]; } type;
 
     /* varchar loc[16]; */
-    struct { unsigned short len; unsigned char arr[5]; } size;
+    struct { unsigned short len; unsigned char arr[15]; } size;
 
     struct { unsigned short len; unsigned char arr[15]; } name;
 

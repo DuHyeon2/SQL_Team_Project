@@ -4,9 +4,8 @@
 
 void main()
 {
-	//printf("테스트입니다");
-	//DB_connect();
-	//insert_tuple();
 	DB_connect();
+	Insert_tuple();
 	Update_tuple();
+	Delete_tuple();
 }
